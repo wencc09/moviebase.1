@@ -6,11 +6,12 @@ import { CONFIG } from '../constants';
 
 interface IndexPageProps {
   state: MBState;
+  apiCall: (payload: any) => Promise<any>;
   setModeUser: (user: any, token: string, profile: any) => void;
   setModeGuest: () => void;
 }
 
-const IndexPage: React.FC<IndexPageProps> = ({ state, setModeUser, setModeGuest }) => {
+const IndexPage: React.FC<IndexPageProps> = ({ state, apiCall, setModeUser, setModeGuest }) => {
   const [showSplash, setShowSplash] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [authStep, setAuthStep] = useState(1);
@@ -28,17 +29,9 @@ const IndexPage: React.FC<IndexPageProps> = ({ state, setModeUser, setModeGuest 
         callback: async (resp: any) => {
           const idToken = resp.credential;
           try {
-            // 使用 profileGet 作為登入後的驗證與資料獲取
-            const res = await fetch(CONFIG.GAS_WEBAPP_URL, {
-              method: "POST",
-              body: JSON.stringify({ action: "profileGet", idToken })
-            });
-            const text = await res.text();
-            let data;
-            try { data = JSON.parse(text); } catch(e) { console.error("Parse error", text); return; }
-
+            // 使用統一的 apiCall 邏輯
+            const data = await apiCall({ action: "profileGet", idToken });
             if (data && data.ok) {
-              // 從 profileGet 的回傳中提取用戶基本資訊與 Profile
               const userObj = data.user || { 
                 name: data.authorName || "User", 
                 picture: data.authorPic || "", 
@@ -48,7 +41,7 @@ const IndexPage: React.FC<IndexPageProps> = ({ state, setModeUser, setModeGuest 
               setModeUser(userObj, idToken, data.profile || data.row || data);
               navigate("/app/lobby");
             } else {
-              alert("登入驗證失敗，請稍後再試");
+              alert("登入驗證失敗，請檢查後端服務權限");
             }
           } catch (e) {
             console.error("Login verify failed", e);
@@ -59,7 +52,7 @@ const IndexPage: React.FC<IndexPageProps> = ({ state, setModeUser, setModeGuest 
       const btn = document.getElementById("gsiBtn");
       if (btn) window.google.accounts.id.renderButton(btn, { theme: "outline", size: "large" });
     }
-  }, [showSplash, setModeUser, navigate]);
+  }, [showSplash, apiCall, setModeUser, navigate]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">

@@ -1,0 +1,7 @@
+{
+  "name": "MovieBase",
+  "description": "A detailed movie/series tracking website with a social floating theater wall, watch records, and Google Identity integration.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
